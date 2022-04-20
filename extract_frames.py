@@ -51,10 +51,10 @@ num_process = args.num_process
 pattern = args.pattern
 num_frames = args.num_frames
 
-assert src_dir.exists(), f"{src_dir} does not exist"
-dst_dir.mkdir(parents=True, exist_ok=True)
+assert os.path.exists(src_dir), f"{src_dir} does not exist"
 src_dir = Path(src_dir)
 dst_dir = Path(dst_dir)
+dst_dir.mkdir(parents=True, exist_ok=True)
 
 queue = Queue()
 for video_path in src_dir.glob(pattern):
