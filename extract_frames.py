@@ -14,7 +14,7 @@ def parse_args():
     parser.add_argument("--src_dir", type=str, help="the directory of the video files")
     parser.add_argument("--dst_dir", type=str, help="the directory of the extracted frames")
     parser.add_argument("--num_process", type=int, default=4, help="the number of processes")
-    parser.add_argument("--num_frames", type=int, default=60, help="the number of frames to extract")
+    parser.add_argument("--num_frames", type=int, default=-1, help="the number of frames to extract")
     parser.add_argument("--pattern", type=str, default="*.mp4", help="the pattern of the video files in glob format")
     return parser.parse_args()
 
@@ -24,18 +24,17 @@ def extract_frames(path: Path, dst_dir: Path, num_frames: int):
     video_dst_dir = dst_dir / path.name.split(".")[0]
     video_dst_dir.mkdir(parents=True, exist_ok=True)
 
-    i = 0
-    while video_cap.isOpened():
+    if num_frames < 0:
+        num_frames = int(video_cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    num_frames = min(num_frames, int(video_cap.get(cv2.CAP_PROP_FRAME_COUNT)))
+
+    for i in range(num_frames):
         ret, image = video_cap.read()
         if not ret:
             print(f"{path} proccessed.")
             break
-        
-        if i > num_frames:
-            break
 
-        cv2.imwrite(str(video_dst_dir / f"frame_{i}.jpg"), image)
-        i += 1
+        cv2.imwrite(str(video_dst_dir / f"frame_{i:06d}.jpg"), image)
 
 
 def multi_process(queue: Queue, dst_dir: Path, num_frames: int):
@@ -52,11 +51,10 @@ num_process = args.num_process
 pattern = args.pattern
 num_frames = args.num_frames
 
-src_dir = Path(src_dir)
-dst_dir = Path(dst_dir)
-
 assert src_dir.exists(), f"{src_dir} does not exist"
 dst_dir.mkdir(parents=True, exist_ok=True)
+src_dir = Path(src_dir)
+dst_dir = Path(dst_dir)
 
 queue = Queue()
 for video_path in src_dir.glob(pattern):
